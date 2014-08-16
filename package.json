@@ -1,0 +1,37 @@
+{
+  "name": "SkunkWorks",
+  "version": "0.0.1-5",
+  "description": "realtime cmoomunication and tweets visualization",
+  "keywords": [
+    "Tweets",
+    "Node.js",
+    "socket.io",
+    "setiment"
+  ],
+  "author": {
+    "name": "Rajeev Reddy",
+    "email": "rajeev.reddy.d@gmail.com",
+    "url": "http://www.rajeev-reddy.com/"
+  },
+  "engines": {
+    "node": ">= 0.6.0",
+    "npm": ">= 1.0.0"
+  },
+  "dependencies": {
+    "express": "~3.4.4",
+    "socket.io": "*",
+    "mongoose": "*",
+    "twit": "*"
+  },
+  "devDependencies": {},
+  "bundleDependencies": [],
+  "private": true,
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "subdomain": "skunkworks",
+  "domains": [
+    "node-skunkworks.rajeev-reddy.com"
+  ]
+}

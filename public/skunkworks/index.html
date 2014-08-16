@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="content-type" content="text/html;charset=iso-8859-1" />
+		<meta name="author" content="www.rajeev-reddy.com" />
+		<meta name="viewport" content="width=device-width initial-scale=1.0 maximum-scale=1.0 user-scalable=yes" />
+
+		<title>WebSockets SkunkWorks</title>
+
+		<link type="text/css" rel="stylesheet" href="http://fonts.googleapis.com/css?family=Exo:100,400,900" />
+		<link type="text/css" rel="stylesheet" href="css/layout.css" />
+		<script src="/socket.io/socket.io.js"></script>
+		<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/2.0.2/jquery.min.js"></script>
+		<script src="http://maps.google.com/maps/api/js?sensor=false&v=3&libraries=geometry,visualization"></script>
+		<script>
+		  var map;
+		  var liveTweets;
+		  var heatmap;
+		  function initialize() {
+		    //Setup Google Map
+		    var myLatlng = new google.maps.LatLng(25.7850,5);
+		    var light_grey_style = [{"featureType":"landscape","stylers":[{"saturation":-100},{"lightness":65},{"visibility":"on"}]},{"featureType":"poi","stylers":[{"saturation":-100},{"lightness":51},{"visibility":"simplified"}]},{"featureType":"road.highway","stylers":[{"saturation":-100},{"visibility":"simplified"}]},{"featureType":"road.arterial","stylers":[{"saturation":-100},{"lightness":30},{"visibility":"on"}]},{"featureType":"road.local","stylers":[{"saturation":-100},{"lightness":40},{"visibility":"on"}]},{"featureType":"transit","stylers":[{"saturation":-100},{"visibility":"simplified"}]},{"featureType":"administrative.province","stylers":[{"visibility":"off"}]},{"featureType":"water","elementType":"labels","stylers":[{"visibility":"on"},{"lightness":-25},{"saturation":-100}]},{"featureType":"water","elementType":"geometry","stylers":[{"hue":"#ffff00"},{"lightness":-25},{"saturation":-97}]}];
+		    var myOptions = {
+		      zoom: 2,
+		      center: myLatlng,
+		      mapTypeId: google.maps.MapTypeId.ROADMAP,
+		      mapTypeControl: true,
+		      mapTypeControlOptions: {
+		        style: google.maps.MapTypeControlStyle.HORIZONTAL_BAR,
+		        position: google.maps.ControlPosition.LEFT_BOTTOM
+		      },
+		      styles: light_grey_style
+		    };
+		    map = new google.maps.Map(document.getElementById("map-canvas"), myOptions);
+
+		    var liveTweets = new google.maps.MVCArray();
+		    heatmap = new google.maps.visualization.HeatmapLayer({
+		      data: liveTweets,
+		      radius: 25
+		    });
+		    heatmap.setMap(map);
+
+
+		    var socket = io.connect();//'ws://skunkworks-drreddy.rhcloud.com:8000'); //'http://localhost:8080');
+		    // These are events reserved by socket.io, and we listen in.
+		    socket.on('connect', function() {
+		        console.log('connection to server established.');
+		    });
+
+		    socket.on('date', function (data) {
+	            var li = document.createElement('li');
+	            li.innerHTML = JSON.parse(data);
+	            $('#pings').prepend(li);
+	        });
+
+		    socket.on('data-stream', function (data) {
+
+		      //Add tweet to the heat map array.
+		      var tweetLocation = new google.maps.LatLng(data.lng,data.lat);
+		      liveTweets.push(tweetLocation);
+
+		      var tweet = '<li  data-lng=' + data.lng + ' data-lat=' + data.lat + '><b>' + data.tweet + '</b><br/> <span style="float:right;">- tweeted by ' + data.user + ' <img class="profpic" src="' + data.pic + '" /></span> <br/><br/> created at ' + data.toc + '</li>';
+
+		      $('.tweets').prepend(tweet);
+
+		      //Flash a dot onto the map quickly
+		      var image = "img/small-dot-icon.png";
+		      var marker = new google.maps.Marker({
+		        position: tweetLocation,
+		        map: map,
+		        icon: image
+		      });
+
+		      setTimeout(function(){
+		        marker.setMap(null);
+		      },600);
+
+		      //console.log('Longitude: ' + data.lng + ', Latitude: ' + data.lat)
+
+		    });
+
+		    socket.on('done', function (data) {
+		    	console.log('recieved all the data');
+		    	if($('a.pause').attr('id') == 'disabled'){
+		    		$('a.pause').text('Loaded Data');
+		    		setTimeout($('a.pause').text('Load More Data'),1000);
+		    		$('a.pause').attr('id','enabled');
+		    	}
+		    });
+
+
+
+		    $('#links a').on('click',function( e ){
+				ele = $(this).attr('href');
+				e.preventDefault();
+				$('html, body').animate({scrollLeft: $(ele).offset().left}, 800, function(){
+					if(ele == '#page-left'){
+						socket.emit("send data");
+					}else{
+						socket.emit("send date");
+					}
+				});
+			});
+
+			$('a.back').on('click',function( e ){
+				e.preventDefault();
+				$('html, body').animate({scrollLeft: $('#main-page').offset().left}, 800,function(){
+				});
+				
+			});
+
+			$('a.pause').on('click',function( e ){
+				e.preventDefault();
+				if($(this).attr('id') == 'enabled'){
+					socket.emit("send data");
+					$(this).text('Loading Data ....');
+					$(this).attr('id','disabled');
+				}
+			});
+
+			$('.slider').on('click',function( e ){
+				e.preventDefault();
+				if($(this).attr('id') == 'open'){
+					$('.tweet-panel').animate({left: '-260px'}, 800,function(){
+					});
+					$(this).attr('id','closed');
+					$(this).html('&rarr;');
+				}else if($(this).attr('id') == 'closed'){
+					$('.tweet-panel').animate({left: '5px'}, 800,function(){
+					});
+					$(this).attr('id','open');
+					$(this).html('&larr;');
+				}
+			});
+
+			$('html, body').animate({scrollLeft: $('#main-page').offset().left}, 100);
+		  }
+
+		  google.maps.event.addDomListener(window, 'load', initialize);
+	  	</script>
+	  	<style>
+	      #map-canvas {
+	        width:100%;
+	        height: 100%;
+	        margin: 0px;
+	        padding: 0px;
+	        border:1px solid grey;
+	        border-radius:3px;
+	      }
+	    </style>
+	</head>
+	<body>
+		<div id="page">
+			<div id="page-left">
+				<div>
+					<div class="header">
+						<a href="#" class="pause" id="enabled">Load More Data</a>
+						<span>Real Time Tweets Visualization in Gmaps HeatMap</span>
+						<a href="#" class="back">back &rsaquo;</a>
+					</div>
+					<div class="panel" style="min-width:1000px; height:550px; padding-top:20px;">
+						<!-- <p>This page with <strong>sliding panels</strong></p> -->
+						<div id="map-canvas"></div>
+					</div>
+					<div class="tweet-panel" style="">
+						<span style="">Added Tweets</span> <span class="slider" id="open" style="">&larr;</span><br/>
+						<div class="tweets-container" style=" height:500px; overflow-x:hidden; overflow-y:scroll; width:95%; border:1px solid black; display:inline-block;">
+							<ul class="tweets">
+							</ul>
+						</div>
+						<!-- <p>This page with <strong>sliding panels</strong></p> -->
+					</div>
+				</div>
+			</div>
+			<div id="main-page">
+				<div>
+					<div class="header">
+						WebSockets SkunkWorks <sub>- By Rajeev Reddy</sub>
+						<a href="http://drreddy.herokuapp.com" target="none">Contact Me</a>
+					</div>
+					<div class="panel">
+						<div>
+							<p><strong><big style="font-size: 60px;">WebSockets SkunkWorks</big></strong> SkunkWorks Project Developed using NodeJS, Socket.IO, Twitter API</p>
+							<div id="links">
+								<a href="#page-left">&lsaquo; Real Time Tweets Visualization in Gmaps HeatMap</a>
+								<a href="#page-right">Real Time Server-Client Communication &rsaquo;</a>
+							</div>
+						</div>
+					</div>
+				</div>
+				<!-- <div style="border-top: 1px solid #FF8286; text-align: center; font-size: 15px; line-height: 40px; margin: 0 10%; position: absolute; bottom:0px; width: 80%;">
+						WebSockets SkunkWorks <sub>- By Rajeev Reddy</sub>
+						<a href="http://drreddy.herokuapp.com" target="none">Contact Me</a>
+				</div> -->
+			</div>
+			<div id="page-right">
+				<div>
+					<div class="header">
+						<a href="#" class="back">&lsaquo; back</a>
+						<span>Real Time Server-Client Communication</span>
+						<!-- <a href="#" class="pause" id="resumed">Pause Data Streaming</a> -->
+					</div>
+					<div class="panel" style="padding-top:20px;">
+						<p><strong>Pings</strong>Data which is being received from server in realtime starting from user connection</p>
+						<div style="height:425px; width:98%; overflow: auto;" >
+		                  <ul id='pings' style="list-style:none; font-size:25px; font-weight:500;"></ul>
+		                </div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</body>
+</html>
