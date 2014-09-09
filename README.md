@@ -10,8 +10,6 @@ Skunkworks projects on websockets implemented using nodejs. This repo consists o
 
 ---
 
-This project is hosted on [nodejitsu] because of it ease and its wonderful support of websockets:
-
 > The main goal of this repository is to provide a
 > base tutorial on how to implement websockets to different scenarios.
 > The client-side code is present in public folder under the repos: 
